@@ -46,3 +46,26 @@ func CreateItem(itemRequest models.ItemRequest) models.Item {
 	// Return the new Item created
 	return newItem
 }
+
+// UpdateItem : function to update the item’s data by ID.
+func UpdateItem(itemRequest models.ItemRequest, id string) (models.Item, error) {
+	// Iterate thru all the items int storage
+	for index, item := range storage {
+		// Check it the id parameter match the current item's ID
+		if id == item.ID {
+			// If it does, then update the item's data
+			item.Name = itemRequest.Name
+			item.Price = itemRequest.Price
+			item.Quantity = itemRequest.Quantity
+			item.UpdatedAt = time.Now()
+
+			// Now replace the item in the storage with new update
+			storage[index] = item
+
+			// return the updated item and nil
+			return item, nil
+		}
+	}
+	// If no item was found, return empty item and error
+	return models.Item{}, errors.New("item was not found")
+}

@@ -3,6 +3,8 @@ package service
 import (
 	"errors"
 	"github.com/BrightOlawale/Inventory-API/models"
+	"github.com/google/uuid"
+	"time"
 )
 
 // Create variable to store item data
@@ -25,4 +27,22 @@ func GetItemById(id string) (models.Item, error) {
 	}
 	// If item was not found return error
 	return models.Item{}, errors.New("item was not found")
+}
+
+// CreateItem : function to create a new item inside storage.
+func CreateItem(itemRequest models.ItemRequest) models.Item {
+	// Create new Item to be passed to storage
+	var newItem models.Item = models.Item{
+		ID:        uuid.New().String(),
+		Name:      itemRequest.Name,
+		Price:     itemRequest.Price,
+		Quantity:  itemRequest.Quantity,
+		CreatedAt: time.Now(),
+	}
+
+	// Store the created item into storage
+	storage = append(storage, newItem)
+
+	// Return the new Item created
+	return newItem
 }

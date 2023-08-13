@@ -8,6 +8,8 @@ import (
 )
 
 // Create variable to store item data
+// This is our storage, we will use this to store all the items
+// It is stored in memory, so when the application is restarted, all the data will be lost
 var storage []models.Item = []models.Item{}
 
 // GetAllItems : get all items from the storage.
@@ -68,4 +70,19 @@ func UpdateItem(itemRequest models.ItemRequest, id string) (models.Item, error) 
 	}
 	// If no item was found, return empty item and error
 	return models.Item{}, errors.New("item was not found")
+}
+
+// DeleteItem : Function to delete items by ID.
+func DeleteItem(id string) bool {
+	// Iterate thru all the items in storage
+	for index, item := range storage {
+		// Check if the id parameter match the current item's ID
+		if id == item.ID {
+			// If it does, then remove the item from the storage
+			storage = append(storage[:index], storage[index+1:]...)
+			return true
+		}
+	}
+	// If no item was found, return false
+	return false
 }

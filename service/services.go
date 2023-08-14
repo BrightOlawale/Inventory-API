@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"github.com/BrightOlawale/Inventory-API/database"
 	"github.com/BrightOlawale/Inventory-API/models"
 	"github.com/google/uuid"
 	"time"
@@ -10,30 +11,40 @@ import (
 // Create variable to store item data
 // This is our storage, we will use this to store all the items
 // It is stored in memory, so when the application is restarted, all the data will be lost
-var storage []models.Item = []models.Item{}
+//var storage []models.Item = []models.Item{}
 
 // GetAllItems : get all items from the storage.
 func GetAllItems() []models.Item {
-	return storage
+	// Create variable to store Item data
+	var itemData []models.Item = []models.Item{}
+
+	// Get all the data from the DB order by created_at
+	database.DB.Order("created_at desc").Find(&itemData)
+
+	// Return the itemData
+	return itemData
 }
 
 // GetItemById : get the item’s data by ID.
 func GetItemById(id string) (models.Item, error) {
-	// We iterate thru all the items in storage
-	for _, item := range storage {
-		// If the current item's ID is exactly same as the id parameter
-		if id == item.ID {
-			// Return item's data
-			return item, nil
-		}
+	// Create a variable to store item data
+	var itemData models.Item
+
+	// Get item from the DB by id
+	result := database.DB.First(&itemData, "id = ?", id)
+
+	// If the item was not found, return an error
+	if result.RowsAffected == 0 {
+		return models.Item{}, errors.New("no item found")
 	}
-	// If item was not found return error
-	return models.Item{}, errors.New("item was not found")
+
+	// Return item since it was found
+	return itemData, nil
 }
 
 // CreateItem : function to create a new item inside storage.
 func CreateItem(itemRequest models.ItemRequest) models.Item {
-	// Create new Item to be passed to storage
+	// Create new Item to be passed to the DB
 	var newItem models.Item = models.Item{
 		ID:        uuid.New().String(),
 		Name:      itemRequest.Name,
@@ -42,8 +53,8 @@ func CreateItem(itemRequest models.ItemRequest) models.Item {
 		CreatedAt: time.Now(),
 	}
 
-	// Store the created item into storage
-	storage = append(storage, newItem)
+	// Store the created item into DB
+	database.DB.Create(&newItem)
 
 	// Return the new Item created
 	return newItem
@@ -51,38 +62,39 @@ func CreateItem(itemRequest models.ItemRequest) models.Item {
 
 // UpdateItem : function to update the item’s data by ID.
 func UpdateItem(itemRequest models.ItemRequest, id string) (models.Item, error) {
-	// Iterate thru all the items int storage
-	for index, item := range storage {
-		// Check it the id parameter match the current item's ID
-		if id == item.ID {
-			// If it does, then update the item's data
-			item.Name = itemRequest.Name
-			item.Price = itemRequest.Price
-			item.Quantity = itemRequest.Quantity
-			item.UpdatedAt = time.Now()
+	// Retrieve the item ID
+	item, err := GetItemById(id)
 
-			// Now replace the item in the storage with new update
-			storage[index] = item
-
-			// return the updated item and nil
-			return item, nil
-		}
+	// If an error occured
+	if err != nil {
+		return models.Item{}, err
 	}
-	// If no item was found, return empty item and error
-	return models.Item{}, errors.New("item was not found")
+
+	// Now update item data
+	item.Name = itemRequest.Name
+	item.Price = itemRequest.Price
+	item.Quantity = itemRequest.Quantity
+	item.UpdatedAt = time.Now()
+
+	// Update the item in DB
+	database.DB.Save(&item)
+
+	// Return the updated item
+	return item, nil
 }
 
 // DeleteItem : Function to delete items by ID.
 func DeleteItem(id string) bool {
-	// Iterate thru all the items in storage
-	for index, item := range storage {
-		// Check if the id parameter match the current item's ID
-		if id == item.ID {
-			// If it does, then remove the item from the storage
-			storage = append(storage[:index], storage[index+1:]...)
-			return true
-		}
+	// Get the item Data by ID
+	itemData, err := GetItemById(id)
+
+	if err != nil {
+		return false
 	}
-	// If no item was found, return false
-	return false
+
+	// Delete itemData from db
+	database.DB.Delete(&itemData)
+
+	// Return true to indicate deletion was successfully
+	return true
 }
